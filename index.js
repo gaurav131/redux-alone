@@ -90,62 +90,27 @@ const store = Redux.createStore(Redux.combineReducers({
     goals,
 }), Redux.applyMiddleware(checker, logger))
 
-function addTodo() {
-    const input = document.getElementById('todo')
-    const name = input.value
-    input.value = ''
-   store.dispatch(addTodoAction({
-        name,
-        id: generateId(),
-        complete: false
-    }))
-}
-
-function addGoal() {
-    const input = document.getElementById('goal')
-    const name = input.value
-    input.value = ''
-   store.dispatch(addGoalAction({
-        name: name,
-        id: generateId()
-    }))
-}
-document.getElementById('todoBtn').addEventListener('click', addTodo)
-document.getElementById('goalBtn').addEventListener('click', addGoal)
-store.subscribe(() => {
-    const {goals, todos} = store.getState()
-    $('#goalList').empty()
-    $('#todoList').empty()
-    goals.forEach(addGoalDom)
-    todos.forEach(addTodoDom)
-})
-
-function addGoalDom(goal) {
-    let node = $(`<li>${goal.name}</li>`)
-    let button = $('<button>X</button>')
-    button.on('click', ()=>{
-       store.dispatch(removeGoalAction(goal.id))
-    })
-    $('#goalList').append(node).append(button)
-}
-function addTodoDom(todo) {
-    let node = $(`<li>${todo.name}</li>`)
-    let button = $('<button>X</button>')
-    button.on('click', ()=>{
-       store.dispatch(removeTodoAction(todo.id))
-    })
-    node.css('text-decoration', todo.complete?'line-through': 'none')
-    node.on('click', ()=>{
-       store.dispatch(toggleTodoAction(todo.id))})
-    $('#todoList').append(node).append(button)
-}
-
-function App(props) {
-    return <div><TodoList store={props.store}/><GoalList store={props.store}/></div>
+class App extends React.Component {
+    constructor(props) {
+        super(props);
+    }
+    componentDidMount(){
+        const {store} = this.props
+        store.subscribe(()=> this.forceUpdate())
+    }
+    render() {
+        console.log('rerun')
+        return <div><TodoList store={this.props.store}/><GoalList store={this.props.store}/></div>
+    }
 }
 function ListItems(props){
     return (<ul>
-        {props.items.forEach(item => <li>{item.name}</li>)}
+        {props.items.map(item => {
+            return <li key={item.id}>
+                <span onClick={()=>props.toggle && props.toggle(item.id)}
+                      style={{textDecoration: item.complete?'line-through': 'none'}}>{item.name}</span>
+                <button onClick={() => props.removeItem(item)}>X</button></li>
+        })}
     </ul>)
 }
 
@@ -160,21 +125,45 @@ class TodoList extends React.Component{
             complete: false
         }))
     }
+    removeItem = todo=>{
+        this.props.store.dispatch(removeTodoAction(todo.id))
+    }
+    toggleItem = id => {
+        this.props.store.dispatch(toggleTodoAction(id))
+    }
     render(){
+        console.log('running todo again')
         return( <div>
             <h1>TODO List</h1>
             <input type='text' ref={(input) => (this.input = input)} placeholder='Add Todo'/>
             <button onClick={this.addTodoItem}>Add Todo</button>
-            <ListItems items={this.props.store.getState().todos}/>
+            <ListItems items={this.props.store.getState().todos} removeItem={this.removeItem} toggle={this.toggleItem}/>
             </div>)
     }
 }
 class GoalList extends React.Component{
+    addGoalItem = (e)=>{
+        e.preventDefault()
+        const name = this.input.value
+        this.input.value = ''
+        this.props.store.dispatch(addGoalAction({
+            name: name,
+            id: generateId()
+        }))
+
+    }
+    removeItem = goal=>{
+        this.props.store.dispatch(removeGoalAction(goal.id))
+    }
     render(){
-        return( <div>
-        <h1>Goal List</h1>
-        <ListItems items={this.props.store.getState().goals}/>
-        </div>)
+        return(
+            <div>
+            <h1>Goal List</h1>
+            <input type='text' ref={(input) => (this.input = input)} placeholder='Add Goal'/>
+            <button onClick={this.addGoalItem}>Add Todo</button>
+            <ListItems items={this.props.store.getState().goals} removeItem={this.removeItem}/>
+            </div>
+        )
     }
 }
 
