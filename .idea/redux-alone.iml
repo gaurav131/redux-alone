@@ -10,5 +10,6 @@
     <orderEntry type="library" name="react-dom" level="application" />
     <orderEntry type="library" name="@babel/standalone" level="application" />
     <orderEntry type="library" name="index" level="application" />
+    <orderEntry type="library" name="redux-thunk" level="application" />
   </component>
 </module>
